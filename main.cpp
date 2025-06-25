@@ -14,10 +14,10 @@
 
 #define LOG_INFO(message) \
     std::cout << "[HYDRATE][INFO][" << __func__ << "]: " << message << std::endl;
-
+class CWindowTransformer;
 inline HANDLE PHANDLE = nullptr;
 static std::vector<void*> g_vCallbackIDs;
-static std::vector<IWindowTransformer*> g_vTransformers;
+static std::vector<CWindowTransformer*> g_vTransformers;
 static Hyprlang::STRING const* PFRAGMENTSHADER = nullptr;
 static Hyprlang::INT* const* PDAMAGEEVERYTHING = nullptr;
 static Hyprlang::INT* const* PRENDEREVERYFRAME = nullptr;
@@ -245,19 +245,17 @@ int animationTimerTicked(void* data) {
         return 0;
     }
 
-    for (const auto& tr : g_vTransformers) {
-        auto pWindowTransformer = static_cast<CWindowTransformer*>(tr);
-
-        if (!(pWindowTransformer && pWindowTransformer->pWindow && pWindowTransformer->pWindow->m_bIsMapped && !pWindowTransformer->pWindow->isHidden()))
+    for (const auto& pTransformer : g_vTransformers) {
+        if (!(pTransformer && pTransformer->pWindow && pTransformer->pWindow->m_bIsMapped && !pTransformer->pWindow->isHidden()))
             continue;
 
         if (**PDAMAGEEVERYTHING) {
-            auto* const PMONITOR = g_pCompositor->getMonitorFromID(pWindowTransformer->pWindow->m_iMonitorID);
+            auto* const PMONITOR = g_pCompositor->getMonitorFromID(pTransformer->pWindow->m_iMonitorID);
             g_pHyprRenderer->damageMonitor(PMONITOR);
             continue;
         }
 
-        g_pHyprRenderer->damageWindow(pWindowTransformer->pWindow, true);
+        g_pHyprRenderer->damageWindow(pTransformer->pWindow, true);
     }
 
     wl_event_source_timer_update(g_pAnimationTimer, (g_pCompositor && g_pHyprRenderer->m_pMostHzMonitor) ? (1000.0 / g_pHyprRenderer->m_pMostHzMonitor->refreshRate) : 16);
@@ -278,8 +276,7 @@ void onNewWindow(void* self, std::any data) {
 
 void onWindowClose(void* self, std::any data) {
     auto* const PWINDOW = std::any_cast<CWindow*>(data);
-    std::erase_if(g_vTransformers, [PWINDOW](IWindowTransformer* pTr) {
-        auto pTransformer = static_cast<CWindowTransformer*>(pTr);
+    std::erase_if(g_vTransformers, [PWINDOW](CWindowTransformer* pTransformer) {
         return pTransformer->pWindow == PWINDOW;
     });
 }
@@ -289,9 +286,7 @@ void onConfigReload(void* self, std::any data) {
 
     g_bInvalidFragmentShaderFile = (loadShaderSourceFromFile(*PFRAGMENTSHADER).empty());  // enough to display a message about a missing file
 
-    for (const auto& tr : g_vTransformers) {
-        auto pTransformer = static_cast<CWindowTransformer*>(tr);
-
+    for (const auto& pTransformer : g_vTransformers) {
         if (!pTransformer || !pTransformer->pWindow)
             continue;
 
@@ -355,6 +350,16 @@ APICALL EXPORT void PLUGIN_EXIT() {
     for (const auto& id : g_vCallbackIDs) {
         HyprlandAPI::unregisterCallback(PHANDLE, (HOOK_CALLBACK_FN*)id);
     }
+
+    for (auto& pWindow : g_pCompositor->m_vWindows) {
+        if (!pWindow || !pWindow->m_bIsMapped)
+            continue;
+
+        std::erase_if(pWindow->m_vTransformers, [](const std::unique_ptr<IWindowTransformer>& pTransformer) {
+            return std::find(g_vTransformers.begin(), g_vTransformers.end(), pTransformer.get()) != g_vTransformers.end();
+        });
+    }
+
     g_vTransformers.clear();
 
     HyprlandAPI::addNotification(PHANDLE, "[Hydrate] Unloaded successfully!", CColor{0.2, 1.0, 0.2, 1.0}, 5000);

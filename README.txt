@@ -3,7 +3,7 @@ HYDRATE
 
 Hydrate is a Hyprland plugin that allows users to apply custom GLSL shaders to individual windows, rather than the entire screen.
 
-NOTE: This plugin is built for the slightly outdated Hyprland v0.39.0 since it is the version is personally use and maintain locally.
+NOTE: This plugin is built for the slightly outdated Hyprland v0.39.0 since it is the version I personally use and maintain locally.
 
 ====
 INSTALLATION
@@ -52,9 +52,9 @@ PROJECT'S TODO
 
 [ ] Fix damage issues and animation tracking.
 [ ] Ability to select the version of the shader through a configuration option.
-[ ] Background texture(s.)
+[-] Background texture(s.)
 [ ] More rendering metadata uniforms (e.g. rounding, blur and noise data.)
-[ ] Add a configuration option for damaging windows on each change.
+[x] Add a configuration option for damaging windows on each change.
 [ ] Ability to pass uniforms directly from the Hyprland configuration.
 [ ] Recompile the shader on file change.
 [ ] Ability to modify Hyprland's internal shaders (e.g. blur passes, decorations, etc.)
@@ -65,4 +65,4 @@ PROJECT'S TODO
 SUPPORT ME
 ====
 
-If you like things I do, consider leaving a tip through my ko-fi: https://ko-fi.com/its-darsh
+If you like things I do, consider leaving a tip through my ko-fi: https://ko-fi.com/itsdarsh
